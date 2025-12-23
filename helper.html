@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Помощник для игры "Золотые квадраты"</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #FFD700, #FFEC8B);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .game-description {
+            color: #aaa;
+            font-size: 1.1rem;
+            margin-top: 10px;
+            line-height: 1.5;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .control-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 15px 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            flex-wrap: wrap;
+        }
+        
+        .counter {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #4FC3F7;
+        }
+        
+        .counter-value {
+            font-size: 2.2rem;
+            color: #FFD700;
+            margin-left: 8px;
+        }
+        
+        .reset-button {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%);
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(255, 215, 0, 0.3);
+        }
+        
+        .reset-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(255, 215, 0, 0.5);
+        }
+        
+        .reset-button:active {
+            transform: translateY(0);
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .game-section, .info-section {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-gap: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+        
+        .cell {
+            aspect-ratio: 1;
+            background-color: #555;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            position: relative;
+            font-weight: bold;
+        }
+        
+        .cell:hover {
+            transform: scale(1.05);
+        }
+        
+        .cell.closed {
+            background-color: #555;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7);
+        }
+        
+        .cell.opened {
+            background-color: #333;
+        }
+        
+        .cell.gold {
+            background-color: #333;
+        }
+        
+        .cell.gold::after {
+            content: "★";
+            color: #FFD700;
+            font-size: 1.8rem;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .border-normal {
+            border: 3px dashed #4FC3F7;
+        }
+        
+        .border-gold {
+            border: 3px dashed #FFD700;
+        }
+        
+        .border-none {
+            border: 3px dashed #888;
+        }
+        
+        .cell-number {
+            font-size: 1.2rem;
+            color: #FFD700;
+            margin-bottom: 5px;
+        }
+        
+        .cell-info {
+            font-size: 0.7rem;
+            color: #aaa;
+        }
+        
+        .cell.excluded {
+            background-color: #444;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .cell.excluded .cell-number {
+            color: #888;
+        }
+        
+        .cell.excluded .cell-info {
+            color: #666;
+        }
+        
+        .cell.excluded::after {
+            content: "✗";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff4444;
+            font-size: 1.5rem;
+        }
+        
+        .selection-panel {
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        .selection-title {
+            color: #FFD700;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .selection-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .selection-button {
+            background: linear-gradient(135deg, #4FC3F7 0%, #1976D2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(79, 195, 247, 0.3);
+            min-width: 140px;
+        }
+        
+        .selection-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(79, 195, 247, 0.5);
+        }
+        
+        .selection-button:active {
+            transform: translateY(0);
+        }
+        
+        .selection-button.gold {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%);
+            box-shadow: 0 4px 8px rgba(255, 215, 0, 0.3);
+        }
+        
+        .selection-button.gold:hover {
+            box-shadow: 0 6px 12px rgba(255, 215, 0, 0.5);
+        }
+        
+        .selection-button.none {
+            background: linear-gradient(135deg, #888 0%, #555 100%);
+            box-shadow: 0 4px 8px rgba(136, 136, 136, 0.3);
+        }
+        
+        .selection-button.none:hover {
+            box-shadow: 0 6px 12px rgba(136, 136, 136, 0.5);
+        }
+        
+        .info-section {
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+        
+        .info-title {
+            color: #FFD700;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .stats {
+            margin-bottom: 25px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-label {
+            color: #aaa;
+        }
+        
+        .stat-value {
+            color: #FFD700;
+            font-weight: bold;
+        }
+        
+        .hint {
+            background-color: rgba(255, 215, 0, 0.1);
+            border-left: 4px solid #FFD700;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .hint-title {
+            color: #FFD700;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .instructions {
+            margin-top: 30px;
+        }
+        
+        .instructions h3 {
+            color: #FFD700;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .instructions ol {
+            padding-left: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 12px;
+            line-height: 1.5;
+            color: #ccc;
+        }
+        
+        .instructions li strong {
+            color: #FFD700;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .legend-text {
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+        
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #888;
+            font-size: 0.9rem;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            width: 100%;
+            max-width: 1000px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .game-section, .info-section {
+                width: 100%;
+            }
+            
+            .game-board {
+                grid-template-columns: repeat(6, 1fr);
+                grid-gap: 8px;
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .control-panel {
+                flex-direction: column;
+                gap: 15px;
+                align-items: center;
+                text-align: center;
+            }
+            
+            .selection-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .selection-button {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .game-board {
+                grid-template-columns: repeat(6, 1fr);
+                grid-gap: 6px;
+                padding: 10px;
+            }
+            
+            .cell {
+                font-size: 0.8rem;
+            }
+            
+            .cell-number {
+                font-size: 1rem;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .counter {
+                font-size: 1.2rem;
+            }
+            
+            .counter-value {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Помощник для "Золотых квадратов"</h1>
+            <p class="game-description">Используйте этот инструмент, чтобы принимать оптимальные решения в игре "Золотые квадраты". Отмечайте открытые квадраты и программа покажет, какие квадраты лучше открывать дальше.</p>
+        </header>
+        
+        <div class="control-panel">
+            <div class="counter">
+                Кликов в игре: <span class="counter-value" id="clickCounter">0</span>
+            </div>
+            <button class="reset-button" id="resetButton">Новая игра</button>
+        </div>
+        
+        <div class="main-content">
+            <div class="game-section">
+                <div class="game-board" id="gameBoard">
+                    <!-- Игровое поле будет создано с помощью JavaScript -->
+                </div>
+                
+                <div class="selection-panel">
+                    <div class="selection-title" id="selectionTitle">Выберите тип открытого квадрата</div>
+                    <div class="selection-buttons">
+                        <button class="selection-button gold" id="goldButton">Золотой квадрат</button>
+                        <button class="selection-button" id="goldBorderButton">Обычный с золотой рамкой</button>
+                        <button class="selection-button none" id="normalButton">Обычный без золотой рамки</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h2 class="info-title">Информация и статистика</h2>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Открыто квадратов:</span>
+                        <span class="stat-value" id="openedCount">0/30</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Найдено золотых:</span>
+                        <span class="stat-value" id="goldFound">0/4</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Исключено квадратов:</span>
+                        <span class="stat-value" id="excludedCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Лучший ход (проверяет):</span>
+                        <span class="stat-value" id="bestMove">-</span>
+                    </div>
+                </div>
+                
+                <div class="hint">
+                    <div class="hint-title">Совет:</div>
+                    <p id="hintText">Начните с клика по квадрату в центре поля. Он проверяет до 4 соседних квадратов.</p>
+                </div>
+                
+                <div class="instructions">
+                    <h3>Как использовать помощник:</h3>
+                    <ol>
+                        <li>В игре откройте квадрат и запомните его положение.</li>
+                        <li>В помощнике нажмите на тот же квадрат.</li>
+                        <li>Выберите тип квадрата, который вы открыли в игре.</li>
+                        <li>Помощник покажет, какие квадраты лучше открывать дальше.</li>
+                        <li><strong>Число на квадрате</strong> показывает, сколько соседних квадратов будет проверено при клике.</li>
+                    </ol>
+                    
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #555;"></div>
+                            <span class="legend-text">Не открыт</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #333; border: 2px dashed #FFD700;"></div>
+                            <span class="legend-text">Золотой / с золотой рамкой</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #333; border: 2px dashed #4FC3F7;"></div>
+                            <span class="legend-text">Обычный без золотой рамки</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #444; opacity: 0.6;"></div>
+                            <span class="legend-text">Исключен (не содержит золото)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            Помощник для игры "Золотые квадраты". Используйте для оптимизации количества кликов.
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Константы игры
+            const ROWS = 5;
+            const COLS = 6;
+            const TOTAL_CELLS = ROWS * COLS;
+            const GOLD_COUNT = 4;
+            
+            // Состояние помощника
+            let gameBoard = [];
+            let openedCount = 0;
+            let goldFound = 0;
+            let excludedCount = 0;
+            let gameClicks = 0;
+            let selectedCell = null;
+            
+            // Получение элементов DOM
+            const gameBoardElement = document.getElementById('gameBoard');
+            const clickCounterElement = document.getElementById('clickCounter');
+            const resetButton = document.getElementById('resetButton');
+            const openedCountElement = document.getElementById('openedCount');
+            const goldFoundElement = document.getElementById('goldFound');
+            const excludedCountElement = document.getElementById('excludedCount');
+            const bestMoveElement = document.getElementById('bestMove');
+            const hintTextElement = document.getElementById('hintText');
+            const selectionTitleElement = document.getElementById('selectionTitle');
+            const goldButton = document.getElementById('goldButton');
+            const goldBorderButton = document.getElementById('goldBorderButton');
+            const normalButton = document.getElementById('normalButton');
+            
+            // Инициализация помощника
+            function initHelper() {
+                // Сброс состояния
+                gameBoard = [];
+                openedCount = 0;
+                goldFound = 0;
+                excludedCount = 0;
+                gameClicks = 0;
+                selectedCell = null;
+                
+                // Обновление UI
+                clickCounterElement.textContent = '0';
+                openedCountElement.textContent = '0/30';
+                goldFoundElement.textContent = '0/4';
+                excludedCountElement.textContent = '0';
+                bestMoveElement.textContent = '-';
+                hintTextElement.textContent = 'Начните с клика по квадрату в центре поля. Он проверяет до 4 соседних квадратов.';
+                selectionTitleElement.textContent = 'Выберите тип открытого квадрата';
+                
+                // Очистка игрового поля
+                gameBoardElement.innerHTML = '';
+                
+                // Сначала создаем массив gameBoard
+                for (let row = 0; row < ROWS; row++) {
+                    gameBoard[row] = [];
+                    for (let col = 0; col < COLS; col++) {
+                        gameBoard[row][col] = {
+                            row: row,
+                            col: col,
+                            isGold: false,
+                            isOpened: false,
+                            hasGoldBorder: false,
+                            isExcluded: false,
+                            adjacentGoldCount: 0
+                        };
+                    }
+                }
+                
+                // Затем создаем клетки в DOM
+                for (let row = 0; row < ROWS; row++) {
+                    for (let col = 0; col < COLS; col++) {
+                        // Создание клетки в DOM
+                        const cell = document.createElement('div');
+                        cell.className = 'cell closed';
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        
+                        // Добавляем информацию о проверяемых клетках
+                        const checkCount = calculateCheckCount(row, col);
+                        cell.innerHTML = `
+                            <div class="cell-number">${checkCount}</div>
+                            <div class="cell-info">проверяет</div>
+                        `;
+                        
+                        cell.addEventListener('click', function() {
+                            handleCellClick(row, col);
+                        });
+                        
+                        gameBoardElement.appendChild(cell);
+                    }
+                }
+                
+                updateBestMove();
+            }
+            
+            // Расчет количества клеток, которые проверяет данный квадрат
+            function calculateCheckCount(row, col) {
+                let count = 0;
+                const directions = [
+                    {dr: -1, dc: 0},  // сверху
+                    {dr: 1, dc: 0},   // снизу
+                    {dr: 0, dc: -1},  // слева
+                    {dr: 0, dc: 1}    // справа
+                ];
+                
+                for (const dir of directions) {
+                    const newRow = row + dir.dr;
+                    const newCol = col + dir.dc;
+                    
+                    // Проверяем, находится ли клетка в пределах поля
+                    if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
+                        // Проверяем, существует ли клетка в массиве
+                        if (gameBoard[newRow] && gameBoard[newRow][newCol]) {
+                            // Клетка проверяется, если она еще не открыта и не исключена
+                            if (!gameBoard[newRow][newCol].isOpened && !gameBoard[newRow][newCol].isExcluded) {
+                                count++;
+                            }
+                        }
+                    }
+                }
+                
+                return count;
+            }
+            
+            // Обработка клика по клетке
+            function handleCellClick(row, col) {
+                // Игнорируем клики, если клетка уже открыта или исключена
+                if (gameBoard[row][col].isOpened || gameBoard[row][col].isExcluded) {
+                    return;
+                }
+                
+                // Сбрасываем предыдущий выбор
+                if (selectedCell) {
+                    const prevCell = document.querySelector(`.cell[data-row="${selectedCell.row}"][data-col="${selectedCell.col}"]`);
+                    if (prevCell) {
+                        prevCell.style.boxShadow = '';
+                    }
+                }
+                
+                // Выбираем новую клетку
+                selectedCell = gameBoard[row][col];
+                const cellElement = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                if (cellElement) {
+                    cellElement.style.boxShadow = '0 0 0 3px #FFD700';
+                    selectionTitleElement.textContent = `Квадрат (${row+1}, ${col+1}) выбран. Выберите тип:`;
+                }
+            }
+            
+            // Обновление лучшего хода
+            function updateBestMove() {
+                let bestCount = -1;
+                let bestPosition = null;
+                
+                for (let row = 0; row < ROWS; row++) {
+                    for (let col = 0; col < COLS; col++) {
+                        // Рассматриваем только неоткрытые и неисключенные клетки
+                        if (!gameBoard[row][col].isOpened && !gameBoard[row][col].isExcluded) {
+                            const checkCount = calculateCheckCount(row, col);
+                            if (checkCount > bestCount) {
+                                bestCount = checkCount;
+                                bestPosition = {row, col};
+                            }
+                        }
+                    }
+                }
+                
+                if (bestPosition) {
+                    bestMoveElement.textContent = `(${bestPosition.row+1}, ${bestPosition.col+1}) - ${bestCount} кл.`;
+                    
+                    // Обновляем подсказку
+                    if (bestCount === 0) {
+                        hintTextElement.textContent = 'Все клетки проверены. Откройте оставшиеся квадраты.';
+                    } else if (bestCount >= 3) {
+                        hintTextElement.textContent = `Квадрат (${bestPosition.row+1}, ${bestPosition.col+1}) проверяет ${bestCount} соседних клеток - отличный выбор!`;
+                    } else if (bestCount >= 2) {
+                        hintTextElement.textContent = `Квадрат (${bestPosition.row+1}, ${bestPosition.col+1}) проверяет ${bestCount} соседних клеток.`;
+                    } else {
+                        hintTextElement.textContent = `Квадрат (${bestPosition.row+1}, ${bestPosition.col+1}) проверяет ${bestCount} соседних клеток. Попробуйте найти лучший вариант.`;
+                    }
+                } else {
+                    bestMoveElement.textContent = '-';
+                    hintTextElement.textContent = 'Все клетки проверены. Откройте оставшиеся квадраты.';
+                }
+                
+                // Обновляем числа на всех клетках
+                updateCellNumbers();
+            }
+            
+            // Обновление чисел на клетках
+            function updateCellNumbers() {
+                for (let row = 0; row < ROWS; row++) {
+                    for (let col = 0; col < COLS; col++) {
+                        const cell = gameBoard[row][col];
+                        const cellElement = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                        
+                        if (cellElement && !cell.isOpened && !cell.isExcluded) {
+                            const checkCount = calculateCheckCount(row, col);
+                            const numberElement = cellElement.querySelector('.cell-number');
+                            if (numberElement) {
+                                numberElement.textContent = checkCount;
+                                
+                                // Изменяем цвет числа в зависимости от эффективности
+                                if (checkCount >= 3) {
+                                    numberElement.style.color = '#4CAF50'; // Зеленый
+                                } else if (checkCount >= 2) {
+                                    numberElement.style.color = '#FFD700'; // Золотой
+                                } else if (checkCount >= 1) {
+                                    numberElement.style.color = '#4FC3F7'; // Синий
+                                } else {
+                                    numberElement.style.color = '#888'; // Серый
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Исключение клетки (не содержит золото)
+            function excludeCell(row, col) {
+                if (!gameBoard[row] || !gameBoard[row][col] || gameBoard[row][col].isExcluded || gameBoard[row][col].isOpened) {
+                    return;
+                }
+                
+                gameBoard[row][col].isExcluded = true;
+                excludedCount++;
+                
+                const cellElement = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                if (cellElement) {
+                    cellElement.classList.add('excluded');
+                    cellElement.classList.remove('closed');
+                }
+                
+                // Обновляем счетчики
+                excludedCountElement.textContent = excludedCount;
+            }
+            
+            // Обновление клетки после выбора типа
+            function updateCell(row, col, type) {
+                // Увеличиваем счетчик кликов в игре
+                gameClicks++;
+                clickCounterElement.textContent = gameClicks;
+                
+                // Обновляем состояние клетки
+                gameBoard[row][col].isOpened = true;
+                openedCount++;
+                
+                const cellElement = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                if (!cellElement) return;
+                
+                cellElement.classList.remove('closed');
+                cellElement.classList.add('opened');
+                
+                // Удаляем информацию о проверяемых клетках
+                cellElement.innerHTML = '';
+                
+                // Устанавливаем соответствующий стиль в зависимости от типа
+                if (type === 'gold') {
+                    gameBoard[row][col].isGold = true;
+                    goldFound++;
+                    cellElement.classList.add('gold');
+                    cellElement.classList.add('border-gold');
+                } else if (type === 'goldBorder') {
+                    gameBoard[row][col].hasGoldBorder = true;
+                    cellElement.classList.add('border-gold');
+                } else if (type === 'normal') {
+                    cellElement.classList.add('border-normal');
+                    // Если обычный квадрат без золотой рамки, исключаем его
+                    excludeCell(row, col);
+                    
+                    // Также исключаем соседние клетки (по правилам игры)
+                    const directions = [
+                        {dr: -1, dc: 0},  // сверху
+                        {dr: 1, dc: 0},   // снизу
+                        {dr: 0, dc: -1},  // слева
+                        {dr: 0, dc: 1}    // справа
+                    ];
+                    
+                    for (const dir of directions) {
+                        const newRow = row + dir.dr;
+                        const newCol = col + dir.dc;
+                        
+                        // Проверяем, находится ли клетка в пределах поля
+                        if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
+                            // Исключаем соседнюю клетку, если она не открыта
+                            if (!gameBoard[newRow][newCol].isOpened) {
+                                excludeCell(newRow, newCol);
+                            }
+                        }
+                    }
+                }
+                
+                // Сбрасываем выбор
+                selectedCell = null;
+                cellElement.style.boxShadow = '';
+                selectionTitleElement.textContent = 'Выберите тип открытого квадрата';
+                
+                // Обновляем статистику
+                openedCountElement.textContent = `${openedCount}/${TOTAL_CELLS}`;
+                goldFoundElement.textContent = `${goldFound}/${GOLD_COUNT}`;
+                
+                // Проверяем завершение игры
+                if (goldFound >= GOLD_COUNT) {
+                    hintTextElement.textContent = 'Поздравляем! Вы нашли все золотые квадраты!';
+                    bestMoveElement.textContent = 'Игра завершена!';
+                }
+                
+                // Обновляем лучший ход
+                updateBestMove();
+            }
+            
+            // Настройка обработчиков событий
+            goldButton.addEventListener('click', function() {
+                if (selectedCell) {
+                    updateCell(selectedCell.row, selectedCell.col, 'gold');
+                }
+            });
+            
+            goldBorderButton.addEventListener('click', function() {
+                if (selectedCell) {
+                    updateCell(selectedCell.row, selectedCell.col, 'goldBorder');
+                }
+            });
+            
+            normalButton.addEventListener('click', function() {
+                if (selectedCell) {
+                    updateCell(selectedCell.row, selectedCell.col, 'normal');
+                }
+            });
+            
+            resetButton.addEventListener('click', initHelper);
+            
+            // Инициализация помощника
+            initHelper();
+        });
+    </script>
+</body>
+</html>
