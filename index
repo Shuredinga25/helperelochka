@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Помощник для игры "Золотые квадраты"</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #FFD700, #FFEC8B);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .game-description {
+            color: #aaa;
+            font-size: 1.1rem;
+            margin-top: 10px;
+            line-height: 1.5;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .control-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 15px 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            flex-wrap: wrap;
+        }
+        
+        .counter {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #4FC3F7;
+        }
+        
+        .counter-value {
+            font-size: 2.2rem;
+            color: #FFD700;
+            margin-left: 8px;
+        }
+        
+        .reset-button {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%);
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(255, 215, 0, 0.3);
+        }
+        
+        .reset-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(255, 215, 0, 0.5);
+        }
+        
+        .reset-button:active {
+            transform: translateY(0);
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .game-section, .info-section {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-gap: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+        
+        .cell {
+            aspect-ratio: 1;
+            background-color: #555;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            position: relative;
+            font-weight: bold;
+        }
+        
+        .cell:hover {
+            transform: scale(1.05);
+        }
+        
+        .cell.closed {
+            background-color: #555;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7);
+        }
+        
+        .cell.opened {
+            background-color: #333;
+        }
+        
+        .cell.gold {
+            background-color: #333;
+        }
+        
+        .cell.gold::after {
+            content: "★";
+            color: #FFD700;
+            font-size: 1.8rem;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .border-normal {
+            border: 3px dashed #4FC3F7;
+        }
+        
+        .border-gold {
+            border: 3px dashed #FFD700;
+        }
+        
+        .border-none {
+            border: 3px dashed #888;
+        }
+        
+        .cell-number {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            transition: color 0.3s;
+            z-index: 1;
+        }
+        
+        .cell.marked-empty {
+            background-color: #444;
+            opacity: 0.8;
+        }
+        
+        .cell.marked-empty .cell-number {
+            color: #888;
+        }
+        
+        .cell.marked-empty::after {
+            content: "✗";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff4444;
+            font-size: 2.5rem;
+            font-weight: bold;
+            opacity: 0.7;
+            z-index: 0;
+        }
+        
+        .info-section {
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+        
+        .info-title {
+            color: #FFD700;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .stats {
+            margin-bottom: 25px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-label {
+            color: #aaa;
+        }
+        
+        .stat-value {
+            color: #FFD700;
+            font-weight: bold;
+        }
+        
+        .hint {
+            background-color: rgba(255, 215, 0, 0.1);
+            border-left: 4px solid #FFD700;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .hint-title {
+            color: #FFD700;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .instructions {
+            margin-top: 30px;
+        }
+        
+        .instructions h3 {
+            color: #FFD700;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .instructions ol {
+            padding-left: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 12px;
+            line-height: 1.5;
+            color: #ccc;
+        }
+        
+        .instructions li strong {
+            color: #FFD700;
+        }
+        
+        .cell-types {
+            margin-top: 20px;
+        }
+        
+        .cell-types h4 {
+            color: #FFD700;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .cell-type-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .cell-type-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 5px 10px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+        }
+        
+        .cell-type-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .cell-type-text {
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+        
+        .click-instruction {
+            background-color: rgba(79, 195, 247, 0.1);
+            border-left: 4px solid #4FC3F7;
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 0 5px 5px 0;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+        
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #888;
+            font-size: 0.9rem;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            width: 100%;
+            max-width: 1000px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .game-section, .info-section {
+                width: 100%;
+            }
+            
+            .game-board {
+                grid-template-columns: repeat(6, 1fr);
+                grid-gap: 8px;
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .control-panel {
+                flex-direction: column;
+                gap: 15px;
+                align-items: center;
+                text-align: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .game-board {
+                grid-template-columns: repeat(6, 1fr);
+                grid-gap: 6px;
+                padding: 10px;
+            }
+            
+            .cell {
+                font-size: 0.8rem;
+            }
+            
+            .cell-number {
+                font-size: 1.2rem;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .counter {
+                font-size: 1.2rem;
+            }
+            
+            .counter-value {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Помощник для "Золотых квадратов"</h1>
+            <p class="game-description">Используйте этот инструмент, чтобы принимать оптимальные решения в игре "Золотые квадраты". Кликайте по квадратам, чтобы менять их тип. Правый клик возвращает квадрат в закрытое состояние.</p>
+        </header>
+        
+        <div class="control-panel">
+            <div class="counter">
+                Кликов в игре: <span class="counter-value" id="clickCounter">0</span>
+            </div>
+            <button class="reset-button" id="resetButton">Новая игра</button>
+        </div>
+        
+        <div class="main-content">
+            <div class="game-section">
+                <div class="game-board" id="gameBoard">
+                    <!-- Игровое поле будет создано с помощью JavaScript -->
+                </div>
+                
+                <div class="click-instruction">
+                    <strong>Как использовать:</strong><br>
+                    • <strong>Левый клик</strong> - переключает тип квадрата<br>
+                    • <strong>Правый клик</strong> - сбрасывает квадрат в закрытое состояние<br>
+                    • <strong>Квадраты с "✗"</strong> - вероятно пустые (можно открыть для проверки соседей)
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h2 class="info-title">Информация и статистика</h2>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Открыто квадратов:</span>
+                        <span class="stat-value" id="openedCount">0/30</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Найдено золотых:</span>
+                        <span class="stat-value" id="goldFound">0/4</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Вероятно пустых:</span>
+                        <span class="stat-value" id="emptyCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Лучший ход (проверяет):</span>
+                        <span class="stat-value" id="bestMove">-</span>
+                    </div>
+                </div>
+                
+                <div class="hint">
+                    <div class="hint-title">Совет:</div>
+                    <p id="hintText">Начните с клика по квадрату в центре поля. Он проверяет до 5 квадратов (себя и 4 соседних).</p>
+                </div>
+                
+                <div class="instructions">
+                    <h3>Типы квадратов:</h3>
+                    
+                    <div class="cell-types">
+                        <div class="cell-type-list">
+                            <div class="cell-type-item">
+                                <div class="cell-type-color" style="background-color: #555; color: #FFD700;">5</div>
+                                <span class="cell-type-text">Закрытый квадрат (число - сколько проверит)</span>
+                            </div>
+                            <div class="cell-type-item">
+                                <div class="cell-type-color" style="background-color: #333; border: 2px dashed #FFD700; color: #FFD700;">★</div>
+                                <span class="cell-type-text">Золотой с золотой рамкой</span>
+                            </div>
+                            <div class="cell-type-item">
+                                <div class="cell-type-color" style="background-color: #333; border: 2px dashed #4FC3F7; color: #FFD700;">★</div>
+                                <span class="cell-type-text">Золотой без золотой рамки</span>
+                            </div>
+                            <div class="cell-type-item">
+                                <div class="cell-type-color" style="background-color: #333; border: 2px dashed #FFD700;"></div>
+                                <span class="cell-type-text">Обычный с золотой рамкой</span>
+                            </div>
+                            <div class="cell-type-item">
+                                <div class="cell-type-color" style="background-color: #333; border: 2px dashed #4FC3F7;"></div>
+                                <span class="cell-type-text">Обычный без золотой рамки</span>
+                            </div>
+                            <div class="cell-type-item">
+                                <div class="cell-type-color" style="background-color: #444; opacity: 0.8; color: #ff4444;">✗</div>
+                                <span class="cell-type-text">Вероятно пустой (можно открыть)</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="cell-types">
+                        <h4>Цвета чисел (эффективность):</h4>
+                        <div class="cell-type-list">
+                            <div class="cell-type-item">
+                                <div class="cell-type-color" style="background-color: #4CAF50; color: white;">5</div>
+                                <span class="cell-type-text">Отлично (5 клеток)</span>
+                            </div>
+                            <div class="cell-type-item">
+                                <div class="cell-type-color" style="background-color: #8BC34A; color: white;">4</div>
+                                <span class="cell-type-text">Очень хорошо (4 клетки)</span>
+                            </div>
+                            <div class="cell-type-item">
+                                <div class="cell-type-color" style="background-color: #FFD700; color: black;">3</div>
+                                <span class="cell-type-text">Хорошо (3 клетки)</span>
+                            </div>
+                            <div class="cell-type-item">
+                                <div class="cell-type-color" style="background-color: #FF9800; color: white;">2</div>
+                                <span class="cell-type-text">Нормально (2 клетки)</span>
+                            </div>
+                            <div class="cell-type-item">
+                                <div class="cell-type-color" style="background-color: #4FC3F7; color: white;">1</div>
+                                <span class="cell-type-text">Плохо (1 клетка)</span>
+                            </div>
+                            <div class="cell-type-item">
+                                <div class="cell-type-color" style="background-color: #888; color: white;">0</div>
+                                <span class="cell-type-text">Бесполезно (0 клеток)</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="click-instruction" style="margin-top: 15px;">
+                        <strong>Логика игры:</strong><br>
+                        • Если квадрат <strong>без золотой рамки</strong> - соседние квадраты не могут быть золотыми<br>
+                        • Но их всё равно можно открыть, чтобы проверить их соседей<br>
+                        • Помощник помечает такие квадраты "✗" - они вероятно пустые
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            Помощник для игры "Золотые квадраты". Используйте для оптимизации количества кликов.
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Константы игры
+            const ROWS = 5;
+            const COLS = 6;
+            const TOTAL_CELLS = ROWS * COLS;
+            const GOLD_COUNT = 4;
+            
+            // Типы клеток (цикл при клике)
+            const CELL_TYPES = [
+                'closed',           // 0 - закрытый
+                'goldWithBorder',   // 1 - золотой с золотой рамкой
+                'goldNoBorder',     // 2 - золотой без золотой рамки
+                'normalWithBorder', // 3 - обычный с золотой рамкой
+                'normalNoBorder'    // 4 - обычный без золотой рамки
+            ];
+            
+            // Состояние помощника
+            let gameBoard = [];
+            let openedCount = 0;
+            let goldFound = 0;
+            let emptyMarkedCount = 0;
+            let gameClicks = 0;
+            
+            // Получение элементов DOM
+            const gameBoardElement = document.getElementById('gameBoard');
+            const clickCounterElement = document.getElementById('clickCounter');
+            const resetButton = document.getElementById('resetButton');
+            const openedCountElement = document.getElementById('openedCount');
+            const goldFoundElement = document.getElementById('goldFound');
+            const emptyCountElement = document.getElementById('emptyCount');
+            const bestMoveElement = document.getElementById('bestMove');
+            const hintTextElement = document.getElementById('hintText');
+            
+            // Инициализация помощника
+            function initHelper() {
+                // Сброс состояния
+                gameBoard = [];
+                openedCount = 0;
+                goldFound = 0;
+                emptyMarkedCount = 0;
+                gameClicks = 0;
+                
+                // Обновление UI
+                clickCounterElement.textContent = '0';
+                openedCountElement.textContent = '0/30';
+                goldFoundElement.textContent = '0/4';
+                emptyCountElement.textContent = '0';
+                bestMoveElement.textContent = '-';
+                hintTextElement.textContent = 'Начните с клика по квадрату в центре поля. Он проверяет до 5 квадратов (себя и 4 соседних).';
+                
+                // Очистка игрового поля
+                gameBoardElement.innerHTML = '';
+                
+                // Создаем игровое поле
+                for (let row = 0; row < ROWS; row++) {
+                    gameBoard[row] = [];
+                    for (let col = 0; col < COLS; col++) {
+                        gameBoard[row][col] = {
+                            row: row,
+                            col: col,
+                            type: 'closed', // начальный тип - закрытый
+                            typeIndex: 0, // индекс в CELL_TYPES
+                            markedEmpty: false // помечен как вероятно пустой
+                        };
+                        
+                        // Создание клетки в DOM
+                        createCellElement(row, col);
+                    }
+                }
+                
+                // Первоначальное обновление чисел
+                updateAllCellNumbers();
+                updateBestMove();
+            }
+            
+            // Создание DOM-элемента для клетки
+            function createCellElement(row, col) {
+                const cell = gameBoard[row][col];
+                const cellElement = document.createElement('div');
+                cellElement.className = 'cell';
+                cellElement.dataset.row = row;
+                cellElement.dataset.col = col;
+                
+                // Обработчик левого клика (смена типа)
+                cellElement.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    handleCellClick(row, col);
+                });
+                
+                // Обработчик правого клика (сброс в закрытый)
+                cellElement.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    resetCellToClosed(row, col);
+                });
+                
+                gameBoardElement.appendChild(cellElement);
+                updateCellDisplay(row, col);
+            }
+            
+            // Расчет количества клеток, которые проверяет данный квадрат
+            // includeSelf = true - включая саму клетку, false - только соседей
+            function calculateCheckCount(row, col, includeSelf = false) {
+                let count = 0;
+                const directions = [
+                    {dr: -1, dc: 0},  // сверху
+                    {dr: 1, dc: 0},   // снизу
+                    {dr: 0, dc: -1},  // слева
+                    {dr: 0, dc: 1}    // справа
+                ];
+                
+                // Если включаем саму клетку и она закрыта
+                if (includeSelf && gameBoard[row][col].type === 'closed') {
+                    count++;
+                }
+                
+                for (const dir of directions) {
+                    const newRow = row + dir.dr;
+                    const newCol = col + dir.dc;
+                    
+                    // Проверяем, находится ли клетка в пределах поля
+                    if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
+                        // Проверяем, существует ли клетка в массиве
+                        if (gameBoard[newRow] && gameBoard[newRow][newCol]) {
+                            // Клетка проверяется, если она закрыта
+                            if (gameBoard[newRow][newCol].type === 'closed') {
+                                count++;
+                            }
+                        }
+                    }
+                }
+                
+                return count;
+            }
+            
+            // Обновление цвета числа в зависимости от эффективности
+            function updateNumberColor(cellElement, checkCount) {
+                const numberElement = cellElement.querySelector('.cell-number');
+                if (!numberElement) return;
+                
+                // Устанавливаем цвет в зависимости от количества проверяемых клеток
+                if (checkCount >= 5) {
+                    numberElement.style.color = '#4CAF50'; // Зеленый
+                } else if (checkCount >= 4) {
+                    numberElement.style.color = '#8BC34A'; // Светло-зеленый
+                } else if (checkCount >= 3) {
+                    numberElement.style.color = '#FFD700'; // Золотой
+                } else if (checkCount >= 2) {
+                    numberElement.style.color = '#FF9800'; // Оранжевый
+                } else if (checkCount >= 1) {
+                    numberElement.style.color = '#4FC3F7'; // Синий
+                } else {
+                    numberElement.style.color = '#888'; // Серый
+                }
+            }
+            
+            // Обработка клика по клетке (смена типа)
+            function handleCellClick(row, col) {
+                const cell = gameBoard[row][col];
+                const cellElement = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                
+                // Если клетка помечена как пустая, снимаем метку
+                if (cell.markedEmpty) {
+                    cell.markedEmpty = false;
+                    emptyMarkedCount--;
+                }
+                
+                // Переключаем тип клетки
+                const oldType = cell.type;
+                const oldTypeIndex = cell.typeIndex;
+                
+                // Увеличиваем индекс типа (по циклу)
+                let newTypeIndex = (oldTypeIndex + 1) % CELL_TYPES.length;
+                let newType = CELL_TYPES[newTypeIndex];
+                
+                // Если переключаем с закрытого на любой другой тип, увеличиваем счетчик кликов
+                if (oldType === 'closed' && newType !== 'closed') {
+                    gameClicks++;
+                    clickCounterElement.textContent = gameClicks;
+                }
+                // Если переключаем с любого типа на закрытый, уменьшаем счетчик кликов
+                else if (oldType !== 'closed' && newType === 'closed') {
+                    gameClicks = Math.max(0, gameClicks - 1);
+                    clickCounterElement.textContent = gameClicks;
+                }
+                
+                // Обновляем состояние клетки
+                cell.typeIndex = newTypeIndex;
+                cell.type = newType;
+                
+                // Обновляем отображение клетки
+                updateCellDisplay(row, col);
+                
+                // Если установлен тип "обычный без золотой рамки" или "золотой без золотой рамки" - помечаем соседей как вероятно пустые
+                if (newType === 'normalNoBorder' || newType === 'goldNoBorder') {
+                    markNeighborsAsEmpty(row, col);
+                }
+                
+                // Если тип меняется с "обычный без рамки" или "золотой без рамки" на другой тип, 
+                // нужно снять метки с соседей, если это были последние такие клетки рядом
+                if ((oldType === 'normalNoBorder' || oldType === 'goldNoBorder') && 
+                    (newType !== 'normalNoBorder' && newType !== 'goldNoBorder')) {
+                    unmarkNeighborsIfNoReason(row, col);
+                }
+                
+                // Обновляем статистику
+                updateStatistics();
+                
+                // Обновляем числа на всех закрытых клетках
+                updateAllCellNumbers();
+                
+                // Обновляем лучший ход
+                updateBestMove();
+            }
+            
+            // Сброс клетки в закрытое состояние
+            function resetCellToClosed(row, col) {
+                const cell = gameBoard[row][col];
+                const cellElement = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                
+                // Если клетка уже закрыта и не помечена как пустая, ничего не делаем
+                if (cell.type === 'closed' && !cell.markedEmpty) return;
+                
+                // Если клетка была открыта (не закрыта), уменьшаем счетчик кликов
+                if (cell.type !== 'closed') {
+                    gameClicks = Math.max(0, gameClicks - 1);
+                    clickCounterElement.textContent = gameClicks;
+                }
+                
+                // Если клетка была помечена как пустая, снимаем метку
+                if (cell.markedEmpty) {
+                    cell.markedEmpty = false;
+                    emptyMarkedCount--;
+                }
+                
+                // Сбрасываем тип клетки
+                cell.type = 'closed';
+                cell.typeIndex = 0;
+                
+                // Обновляем отображение клетки
+                updateCellDisplay(row, col);
+                
+                // Если сбрасывается клетка, которая раньше была "без рамки", проверяем соседей
+                unmarkNeighborsIfNoReason(row, col);
+                
+                // Обновляем статистику
+                updateStatistics();
+                
+                // Обновляем числа на всех закрытых клетках
+                updateAllCellNumbers();
+                
+                // Обновляем лучший ход
+                updateBestMove();
+            }
+            
+            // Снять метки с соседей, если нет причин их держать
+            function unmarkNeighborsIfNoReason(row, col) {
+                const directions = [
+                    {dr: -1, dc: 0},  // сверху
+                    {dr: 1, dc: 0},   // снизу
+                    {dr: 0, dc: -1},  // слева
+                    {dr: 0, dc: 1}    // справа
+                ];
+                
+                for (const dir of directions) {
+                    const newRow = row + dir.dr;
+                    const newCol = col + dir.dc;
+                    
+                    // Проверяем, находится ли клетка в пределах поля
+                    if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
+                        const neighborCell = gameBoard[newRow][newCol];
+                        
+                        // Проверяем, помечена ли клетка как пустая
+                        if (neighborCell.markedEmpty) {
+                            // Проверяем, есть ли другие клетки "без рамки" рядом с этой клеткой
+                            let hasReasonToStayMarked = false;
+                            
+                            // Проверяем всех соседей этой клетки
+                            const neighborDirections = [
+                                {dr: -1, dc: 0}, {dr: 1, dc: 0}, {dr: 0, dc: -1}, {dr: 0, dc: 1}
+                            ];
+                            
+                            for (const ndir of neighborDirections) {
+                                const checkRow = newRow + ndir.dr;
+                                const checkCol = newCol + ndir.dc;
+                                
+                                if (checkRow >= 0 && checkRow < ROWS && checkCol >= 0 && checkCol < COLS) {
+                                    const checkCell = gameBoard[checkRow][checkCol];
+                                    // Если рядом есть клетка "без рамки", то метку оставляем
+                                    if (checkCell.type === 'normalNoBorder' || checkCell.type === 'goldNoBorder') {
+                                        hasReasonToStayMarked = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            // Если нет причин оставаться помеченной, снимаем метку
+                            if (!hasReasonToStayMarked) {
+                                neighborCell.markedEmpty = false;
+                                emptyMarkedCount--;
+                                updateCellDisplay(newRow, newCol);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Обновление отображения клетки
+            function updateCellDisplay(row, col) {
+                const cell = gameBoard[row][col];
+                const cellElement = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                if (!cellElement) return;
+                
+                // Очищаем все классы и содержимое
+                cellElement.className = 'cell';
+                cellElement.innerHTML = '';
+                
+                if (cell.type === 'closed') {
+                    // Закрытая клетка
+                    cellElement.classList.add('closed');
+                    
+                    // Если помечена как пустая
+                    if (cell.markedEmpty) {
+                        cellElement.classList.add('marked-empty');
+                    }
+                    
+                    // Добавляем только цифру
+                    const checkCount = calculateCheckCount(row, col, true);
+                    const numberElement = document.createElement('div');
+                    numberElement.className = 'cell-number';
+                    numberElement.textContent = checkCount;
+                    cellElement.appendChild(numberElement);
+                    
+                    updateNumberColor(cellElement, checkCount);
+                } else {
+                    // Открытая клетка
+                    cellElement.classList.add('opened');
+                    
+                    // Устанавливаем рамку в зависимости от типа
+                    if (cell.type === 'goldWithBorder' || cell.type === 'normalWithBorder') {
+                        cellElement.classList.add('border-gold');
+                    } else {
+                        cellElement.classList.add('border-normal');
+                    }
+                    
+                    // Добавляем звезду для золотых клеток
+                    if (cell.type === 'goldWithBorder' || cell.type === 'goldNoBorder') {
+                        cellElement.classList.add('gold');
+                    }
+                    
+                    // Для открытых клеток не добавляем текст
+                }
+            }
+            
+            // Пометить соседние клетки как вероятно пустые
+            function markNeighborsAsEmpty(row, col) {
+                const directions = [
+                    {dr: -1, dc: 0},  // сверху
+                    {dr: 1, dc: 0},   // снизу
+                    {dr: 0, dc: -1},  // слева
+                    {dr: 0, dc: 1}    // справа
+                ];
+                
+                for (const dir of directions) {
+                    const newRow = row + dir.dr;
+                    const newCol = col + dir.dc;
+                    
+                    // Проверяем, находится ли клетка в пределах поля
+                    if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
+                        const cell = gameBoard[newRow][newCol];
+                        // Помечаем как пустую только если она закрыта и еще не помечена
+                        if (cell.type === 'closed' && !cell.markedEmpty) {
+                            cell.markedEmpty = true;
+                            emptyMarkedCount++;
+                            updateCellDisplay(newRow, newCol);
+                        }
+                    }
+                }
+            }
+            
+            // Обновление статистики
+            function updateStatistics() {
+                openedCount = 0;
+                goldFound = 0;
+                emptyMarkedCount = 0;
+                
+                for (let row = 0; row < ROWS; row++) {
+                    for (let col = 0; col < COLS; col++) {
+                        const cell = gameBoard[row][col];
+                        
+                        if (cell.markedEmpty && cell.type === 'closed') {
+                            emptyMarkedCount++;
+                        }
+                        
+                        if (cell.type !== 'closed') {
+                            openedCount++;
+                            
+                            if (cell.type === 'goldWithBorder' || cell.type === 'goldNoBorder') {
+                                goldFound++;
+                            }
+                        }
+                    }
+                }
+                
+                // Обновляем UI
+                openedCountElement.textContent = `${openedCount}/${TOTAL_CELLS}`;
+                goldFoundElement.textContent = `${goldFound}/${GOLD_COUNT}`;
+                emptyCountElement.textContent = emptyMarkedCount;
+                
+                // Проверяем завершение игры
+                if (goldFound >= GOLD_COUNT) {
+                    hintTextElement.textContent = 'Поздравляем! Вы нашли все золотые квадраты!';
+                    bestMoveElement.textContent = 'Игра завершена!';
+                }
+            }
+            
+            // Обновление лучшего хода
+            function updateBestMove() {
+                let bestCount = -1;
+                let bestPosition = null;
+                
+                for (let row = 0; row < ROWS; row++) {
+                    for (let col = 0; col < COLS; col++) {
+                        const cell = gameBoard[row][col];
+                        
+                        // Рассматриваем только закрытые клетки (даже помеченные как пустые)
+                        if (cell.type === 'closed') {
+                            const checkCount = calculateCheckCount(row, col, true);
+                            if (checkCount > bestCount) {
+                                bestCount = checkCount;
+                                bestPosition = {row, col};
+                            }
+                        }
+                    }
+                }
+                
+                if (bestPosition) {
+                    bestMoveElement.textContent = `(${bestPosition.row+1}, ${bestPosition.col+1}) - ${bestCount} кл.`;
+                    
+                    // Обновляем подсказку
+                    const cell = gameBoard[bestPosition.row][bestPosition.col];
+                    const markedText = cell.markedEmpty ? " (вероятно пустой)" : "";
+                    
+                    if (bestCount === 0) {
+                        hintTextElement.textContent = 'Все клетки проверены. Откройте оставшиеся квадраты.';
+                    } else if (bestCount >= 5) {
+                        hintTextElement.textContent = `Квадрат (${bestPosition.row+1}, ${bestPosition.col+1})${markedText} проверяет ${bestCount} квадратов - отличный выбор!`;
+                    } else if (bestCount >= 3) {
+                        hintTextElement.textContent = `Квадрат (${bestPosition.row+1}, ${bestPosition.col+1})${markedText} проверяет ${bestCount} квадратов.`;
+                    } else {
+                        hintTextElement.textContent = `Квадрат (${bestPosition.row+1}, ${bestPosition.col+1})${markedText} проверяет ${bestCount} квадратов. Попробуйте найти лучший вариант.`;
+                    }
+                } else {
+                    bestMoveElement.textContent = '-';
+                    hintTextElement.textContent = 'Все клетки проверены. Откройте оставшиеся квадраты.';
+                }
+            }
+            
+            // Обновление чисел на всех клетках
+            function updateAllCellNumbers() {
+                for (let row = 0; row < ROWS; row++) {
+                    for (let col = 0; col < COLS; col++) {
+                        const cell = gameBoard[row][col];
+                        const cellElement = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                        
+                        if (cellElement && cell.type === 'closed') {
+                            const checkCount = calculateCheckCount(row, col, true);
+                            const numberElement = cellElement.querySelector('.cell-number');
+                            if (numberElement) {
+                                numberElement.textContent = checkCount;
+                                updateNumberColor(cellElement, checkCount);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Настройка обработчиков событий
+            resetButton.addEventListener('click', initHelper);
+            
+            // Инициализация помощника
+            initHelper();
+        });
+    </script>
+</body>
+</html>
