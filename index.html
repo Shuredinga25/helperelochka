@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Помощник для игры "Золотые квадраты"</title>
     <style>
         * {
@@ -10,6 +10,7 @@
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
         
         body {
@@ -20,40 +21,41 @@
             flex-direction: column;
             align-items: center;
             padding: 20px;
+            overflow-x: hidden;
+            overflow-y: auto;
+            touch-action: pan-y;
         }
         
         .container {
             max-width: 1000px;
             width: 100%;
             margin: 0 auto;
-            padding: 20px;
+            padding: 15px;
         }
         
         header {
             text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
             border-bottom: 2px solid rgba(255, 215, 0, 0.3);
         }
         
         h1 {
-            font-size: 2.8rem;
-            margin-bottom: 10px;
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            margin-bottom: 8px;
             background: linear-gradient(90deg, #FFD700, #FFEC8B);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            line-height: 1.2;
         }
         
         .game-description {
             color: #aaa;
-            font-size: 1.1rem;
-            margin-top: 10px;
-            line-height: 1.5;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
+            font-size: clamp(0.9rem, 3vw, 1rem);
+            margin-top: 5px;
+            line-height: 1.4;
         }
         
         .control-panel {
@@ -61,52 +63,54 @@
             justify-content: space-between;
             align-items: center;
             background-color: rgba(0, 0, 0, 0.4);
-            padding: 15px 25px;
-            border-radius: 15px;
-            margin-bottom: 25px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
             flex-wrap: wrap;
+            gap: 15px;
         }
         
         .counter {
-            font-size: 1.8rem;
+            font-size: clamp(1.1rem, 3vw, 1.5rem);
             font-weight: bold;
             color: #4FC3F7;
+            white-space: nowrap;
         }
         
         .counter-value {
-            font-size: 2.2rem;
+            font-size: clamp(1.3rem, 4vw, 1.8rem);
             color: #FFD700;
-            margin-left: 8px;
+            margin-left: 5px;
         }
         
         .reset-button {
             background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%);
             color: #000;
             border: none;
-            padding: 12px 30px;
-            font-size: 1.2rem;
+            padding: 10px 25px;
+            font-size: clamp(1rem, 2.8vw, 1.2rem);
             font-weight: bold;
-            border-radius: 50px;
+            border-radius: 40px;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 4px 8px rgba(255, 215, 0, 0.3);
-        }
-        
-        .reset-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(255, 215, 0, 0.5);
+            white-space: nowrap;
+            min-height: 44px;
+            min-width: 150px;
         }
         
         .reset-button:active {
-            transform: translateY(0);
+            transform: translateY(2px);
+            box-shadow: 0 2px 4px rgba(255, 215, 0, 0.5);
         }
         
         .main-content {
             display: flex;
-            gap: 30px;
+            gap: 20px;
             flex-wrap: wrap;
             justify-content: center;
+            width: 100%;
         }
         
         .game-section, .info-section {
@@ -114,37 +118,66 @@
             min-width: 300px;
         }
         
+        /* КОНТЕЙНЕР ДЛЯ СЕТКИ - ИСПРАВЛЕНИЕ БАГА */
+        .game-board-wrapper {
+            position: relative;
+            width: 100%;
+            max-height: 70vh;
+            margin: 15px auto;
+            border: 2px dashed rgba(255, 215, 0, 0.3);
+            border-radius: 12px;
+            background-color: rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: auto;
+            padding: 8px;
+            touch-action: pan-x pan-y;
+        }
+        
+        /* САМА СЕТКА */
         .game-board {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
-            grid-gap: 10px;
+            grid-gap: 6px;
             background-color: rgba(0, 0, 0, 0.3);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 6/5;
+            transform-origin: center;
+            transform: scale(1);
+            transition: transform 0.3s ease;
+            position: relative;
+            margin: auto;
         }
         
         .cell {
             aspect-ratio: 1;
             background-color: #555;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
             transition: transform 0.2s, background-color 0.3s;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.9rem;
+            font-size: clamp(0.7rem, 2vw, 0.9rem);
             position: relative;
             font-weight: bold;
+            border: 2px solid transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            overflow: hidden;
         }
         
-        .cell:hover {
-            transform: scale(1.05);
+        .cell:active {
+            transform: scale(0.95);
         }
         
         .cell.closed {
             background-color: #555;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7);
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7);
         }
         
         .cell.opened {
@@ -158,20 +191,20 @@
         .cell.gold::after {
             content: "★";
             color: #FFD700;
-            font-size: 1.8rem;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
         }
         
         .border-normal {
-            border: 3px dashed #4FC3F7;
+            border: 2px dashed #4FC3F7;
         }
         
         .border-gold {
-            border: 3px dashed #FFD700;
+            border: 2px dashed #FFD700;
         }
         
         .cell-number {
-            font-size: 1.4rem;
+            font-size: clamp(1rem, 3vw, 1.4rem);
             font-weight: bold;
             transition: color 0.3s;
             z-index: 1;
@@ -193,7 +226,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             color: #ff4444;
-            font-size: 2.5rem;
+            font-size: clamp(1.5rem, 4vw, 2rem);
             font-weight: bold;
             opacity: 0.7;
             z-index: 0;
@@ -201,28 +234,31 @@
         
         .info-section {
             background-color: rgba(0, 0, 0, 0.4);
-            padding: 25px;
-            border-radius: 15px;
+            padding: 20px;
+            border-radius: 12px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            max-height: 80vh;
+            overflow-y: auto;
         }
         
         .info-title {
             color: #FFD700;
-            font-size: 1.5rem;
-            margin-bottom: 20px;
+            font-size: clamp(1.2rem, 3.5vw, 1.5rem);
+            margin-bottom: 15px;
             text-align: center;
         }
         
         .stats {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
         
         .stat-item {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 12px;
-            padding-bottom: 10px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
         }
         
         .stat-label {
@@ -237,36 +273,37 @@
         .hint {
             background-color: rgba(255, 215, 0, 0.1);
             border-left: 4px solid #FFD700;
-            padding: 15px;
-            margin-top: 20px;
+            padding: 12px;
+            margin-top: 15px;
             border-radius: 0 8px 8px 0;
         }
         
         .hint-title {
             color: #FFD700;
-            font-size: 1.2rem;
-            margin-bottom: 10px;
+            font-size: clamp(1rem, 2.8vw, 1.2rem);
+            margin-bottom: 8px;
         }
         
         .instructions {
-            margin-top: 30px;
+            margin-top: 20px;
         }
         
         .instructions h3 {
             color: #FFD700;
-            margin-bottom: 15px;
-            font-size: 1.3rem;
+            margin-bottom: 12px;
+            font-size: clamp(1rem, 3vw, 1.3rem);
         }
         
         .instructions ol {
-            padding-left: 25px;
-            margin-bottom: 20px;
+            padding-left: 20px;
+            margin-bottom: 15px;
         }
         
         .instructions li {
-            margin-bottom: 12px;
-            line-height: 1.5;
+            margin-bottom: 8px;
+            line-height: 1.4;
             color: #ccc;
+            font-size: clamp(0.85rem, 2.5vw, 0.95rem);
         }
         
         .instructions li strong {
@@ -274,13 +311,13 @@
         }
         
         .cell-types {
-            margin-top: 20px;
+            margin-top: 15px;
         }
         
         .cell-types h4 {
             color: #FFD700;
-            margin-bottom: 10px;
-            font-size: 1.1rem;
+            margin-bottom: 8px;
+            font-size: clamp(0.95rem, 2.8vw, 1.1rem);
         }
         
         .cell-type-list {
@@ -291,51 +328,57 @@
         .cell-type-item {
             display: flex;
             align-items: center;
-            margin-bottom: 8px;
-            padding: 5px 10px;
+            margin-bottom: 6px;
+            padding: 6px 8px;
             background-color: rgba(255, 255, 255, 0.05);
             border-radius: 5px;
+            font-size: clamp(0.8rem, 2.2vw, 0.9rem);
         }
         
         .cell-type-color {
-            width: 20px;
-            height: 20px;
+            width: clamp(18px, 4vw, 22px);
+            height: clamp(18px, 4vw, 22px);
             border-radius: 4px;
-            margin-right: 10px;
+            margin-right: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.8rem;
+            font-size: clamp(0.7rem, 2vw, 0.8rem);
             font-weight: bold;
+            flex-shrink: 0;
         }
         
         .cell-type-text {
             color: #ccc;
-            font-size: 0.9rem;
         }
         
         .click-instruction {
             background-color: rgba(79, 195, 247, 0.1);
             border-left: 4px solid #4FC3F7;
             padding: 10px;
-            margin-top: 15px;
+            margin-top: 12px;
             border-radius: 0 5px 5px 0;
-            font-size: 0.9rem;
+            font-size: clamp(0.8rem, 2.2vw, 0.9rem);
             color: #ccc;
         }
         
         footer {
-            margin-top: 40px;
+            margin-top: 25px;
             text-align: center;
             color: #888;
-            font-size: 0.9rem;
-            padding-top: 20px;
+            font-size: clamp(0.8rem, 2.2vw, 0.9rem);
+            padding-top: 15px;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             width: 100%;
             max-width: 1000px;
         }
         
+        /* Принудительное центрирование и обработка масштабирования */
         @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
             .main-content {
                 flex-direction: column;
             }
@@ -344,49 +387,114 @@
                 width: 100%;
             }
             
-            .game-board {
-                grid-template-columns: repeat(6, 1fr);
-                grid-gap: 8px;
-                padding: 15px;
+            .game-board-wrapper {
+                max-height: 60vh;
+                padding: 5px;
+                margin: 10px auto;
             }
             
-            h1 {
-                font-size: 2.2rem;
+            .game-board {
+                padding: 10px;
+                grid-gap: 4px;
+                transform: scale(0.9);
             }
             
             .control-panel {
                 flex-direction: column;
-                gap: 15px;
                 align-items: center;
                 text-align: center;
+                padding: 15px;
+            }
+            
+            .info-section {
+                max-height: none;
+                overflow-y: visible;
             }
         }
         
         @media (max-width: 480px) {
-            .game-board {
-                grid-template-columns: repeat(6, 1fr);
-                grid-gap: 6px;
+            body {
                 padding: 10px;
             }
             
+            .game-board {
+                padding: 8px;
+                grid-gap: 3px;
+                transform: scale(0.85);
+            }
+            
+            .game-board-wrapper {
+                max-height: 55vh;
+                padding: 4px;
+            }
+            
             .cell {
-                font-size: 0.8rem;
+                border-radius: 4px;
+                border-width: 1px;
+            }
+            
+            .border-normal,
+            .border-gold {
+                border-width: 1px;
+            }
+            
+            .cell.gold::after {
+                font-size: clamp(0.9rem, 2.5vw, 1.2rem);
             }
             
             .cell-number {
-                font-size: 1.2rem;
+                font-size: clamp(0.9rem, 2.5vw, 1.2rem);
             }
             
-            h1 {
-                font-size: 1.8rem;
+            .stat-item {
+                flex-direction: column;
+                align-items: flex-start;
             }
             
-            .counter {
-                font-size: 1.2rem;
+            .stat-value {
+                margin-top: 3px;
+            }
+        }
+        
+        /* Для очень маленьких экранов */
+        @media (max-width: 350px) {
+            .game-board {
+                transform: scale(0.8);
+                padding: 5px;
+                grid-gap: 2px;
             }
             
-            .counter-value {
-                font-size: 1.5rem;
+            .game-board-wrapper {
+                max-height: 50vh;
+            }
+            
+            .cell {
+                border-radius: 3px;
+            }
+            
+            .reset-button {
+                min-width: 130px;
+                padding: 8px 20px;
+            }
+        }
+        
+        /* При горизонтальной ориентации */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .game-board-wrapper {
+                max-height: 80vh;
+            }
+            
+            .game-board {
+                transform: scale(0.8);
+            }
+            
+            .main-content {
+                flex-direction: row;
+            }
+            
+            .info-section {
+                max-height: 80vh;
+                overflow-y: auto;
             }
         }
     </style>
@@ -407,8 +515,10 @@
         
         <div class="main-content">
             <div class="game-section">
-                <div class="game-board" id="gameBoard">
-                    <!-- Игровое поле будет создано с помощью JavaScript -->
+                <div class="game-board-wrapper">
+                    <div class="game-board" id="gameBoard">
+                        <!-- Игровое поле будет создано с помощью JavaScript -->
+                    </div>
                 </div>
                 
                 <div class="click-instruction">
@@ -936,7 +1046,7 @@
                     for (let col = 0; col < COLS; col++) {
                         const cell = gameBoard[row][col];
                         
-                        // Рассматриваем только закрытые, не помеченные клетки
+                        // Рассматриваем только закрытые, не помещенные клетки
                         if (cell.type === 'closed' && !cell.markedEmpty) {
                             const checkCount = calculateCheckCount(row, col, true);
                             if (checkCount > bestCount) {
