@@ -131,7 +131,6 @@
             cursor: pointer;
             transition: transform 0.2s, background-color 0.3s;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             font-size: 0.9rem;
@@ -161,10 +160,6 @@
             color: #FFD700;
             font-size: 1.8rem;
             text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
         }
         
         .border-normal {
@@ -175,14 +170,9 @@
             border: 3px dashed #FFD700;
         }
         
-        .border-none {
-            border: 3px dashed #888;
-        }
-        
         .cell-number {
             font-size: 1.4rem;
             font-weight: bold;
-            margin-bottom: 5px;
             transition: color 0.3s;
             z-index: 1;
         }
@@ -425,7 +415,7 @@
                     <strong>Как использовать:</strong><br>
                     • <strong>Левый клик</strong> - переключает тип квадрата<br>
                     • <strong>Правый клик</strong> - сбрасывает квадрат в закрытое состояние<br>
-                    • <strong>Квадраты с "✗"</strong> - вероятно пустые (можно открыть для проверки соседей)
+                    • <strong>Квадраты с "✗"</strong> - вероятно пустые (не содержат золото)
                 </div>
             </div>
             
@@ -463,7 +453,7 @@
                         <div class="cell-type-list">
                             <div class="cell-type-item">
                                 <div class="cell-type-color" style="background-color: #555; color: #FFD700;">5</div>
-                                <span class="cell-type-text">Закрытый квадрат (число - сколько проверит)</span>
+                                <span class="cell-type-text">Закрытый квадрат (число - сколько потенциально золотых проверит)</span>
                             </div>
                             <div class="cell-type-item">
                                 <div class="cell-type-color" style="background-color: #333; border: 2px dashed #FFD700; color: #FFD700;">★</div>
@@ -483,13 +473,13 @@
                             </div>
                             <div class="cell-type-item">
                                 <div class="cell-type-color" style="background-color: #444; opacity: 0.8; color: #ff4444;">✗</div>
-                                <span class="cell-type-text">Вероятно пустой (можно открыть)</span>
+                                <span class="cell-type-text">Вероятно пустой (не содержит золото)</span>
                             </div>
                         </div>
                     </div>
                     
                     <div class="cell-types">
-                        <h4>Цвета чисел (эффективность):</h4>
+                        <h4>Цвета чисел (эффективность проверки потенциально золотых):</h4>
                         <div class="cell-type-list">
                             <div class="cell-type-item">
                                 <div class="cell-type-color" style="background-color: #4CAF50; color: white;">5</div>
@@ -521,8 +511,8 @@
                     <div class="click-instruction" style="margin-top: 15px;">
                         <strong>Логика игры:</strong><br>
                         • Если квадрат <strong>без золотой рамки</strong> - соседние квадраты не могут быть золотыми<br>
-                        • Но их всё равно можно открыть, чтобы проверить их соседей<br>
-                        • Помощник помечает такие квадраты "✗" - они вероятно пустые
+                        • Помощник помечает такие квадраты "✗" - они вероятно пустые<br>
+                        • <strong>Число на квадрате</strong> показывает, сколько ещё <em>потенциально золотых</em> клеток он проверит
                     </div>
                 </div>
             </div>
@@ -569,6 +559,8 @@
             
             // Инициализация помощника
             function initHelper() {
+                console.log('Инициализация помощника...');
+                
                 // Сброс состояния
                 gameBoard = [];
                 openedCount = 0;
@@ -586,6 +578,7 @@
                 
                 // Очистка игрового поля
                 gameBoardElement.innerHTML = '';
+                console.log('Очищено игровое поле');
                 
                 // Создаем игровое поле
                 for (let row = 0; row < ROWS; row++) {
@@ -594,47 +587,53 @@
                         gameBoard[row][col] = {
                             row: row,
                             col: col,
-                            type: 'closed', // начальный тип - закрытый
-                            typeIndex: 0, // индекс в CELL_TYPES
-                            markedEmpty: false // помечен как вероятно пустой
+                            type: 'closed',
+                            typeIndex: 0,
+                            markedEmpty: false
                         };
-                        
-                        // Создание клетки в DOM
-                        createCellElement(row, col);
                     }
                 }
+                
+                console.log('Создан массив gameBoard размером', ROWS, 'x', COLS);
+                
+                // Создаем клетки в DOM
+                for (let row = 0; row < ROWS; row++) {
+                    for (let col = 0; col < COLS; col++) {
+                        // Создание клетки в DOM
+                        const cell = document.createElement('div');
+                        cell.className = 'cell closed';
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        
+                        // Добавляем цифру
+                        const numberElement = document.createElement('div');
+                        numberElement.className = 'cell-number';
+                        cell.appendChild(numberElement);
+                        
+                        // Обработчик левого клика
+                        cell.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            handleCellClick(row, col);
+                        });
+                        
+                        // Обработчик правого клика
+                        cell.addEventListener('contextmenu', function(e) {
+                            e.preventDefault();
+                            resetCellToClosed(row, col);
+                        });
+                        
+                        gameBoardElement.appendChild(cell);
+                    }
+                }
+                
+                console.log('Создано клеток в DOM:', gameBoardElement.children.length);
                 
                 // Первоначальное обновление чисел
                 updateAllCellNumbers();
                 updateBestMove();
             }
             
-            // Создание DOM-элемента для клетки
-            function createCellElement(row, col) {
-                const cell = gameBoard[row][col];
-                const cellElement = document.createElement('div');
-                cellElement.className = 'cell';
-                cellElement.dataset.row = row;
-                cellElement.dataset.col = col;
-                
-                // Обработчик левого клика (смена типа)
-                cellElement.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    handleCellClick(row, col);
-                });
-                
-                // Обработчик правого клика (сброс в закрытый)
-                cellElement.addEventListener('contextmenu', function(e) {
-                    e.preventDefault();
-                    resetCellToClosed(row, col);
-                });
-                
-                gameBoardElement.appendChild(cellElement);
-                updateCellDisplay(row, col);
-            }
-            
             // Расчет количества клеток, которые проверяет данный квадрат
-            // includeSelf = true - включая саму клетку, false - только соседей
             function calculateCheckCount(row, col, includeSelf = false) {
                 let count = 0;
                 const directions = [
@@ -644,23 +643,23 @@
                     {dr: 0, dc: 1}    // справа
                 ];
                 
-                // Если включаем саму клетку и она закрыта
-                if (includeSelf && gameBoard[row][col].type === 'closed') {
-                    count++;
+                // Проверяем саму клетку, если нужно
+                if (includeSelf) {
+                    const cell = gameBoard[row][col];
+                    if (cell.type === 'closed' && !cell.markedEmpty) {
+                        count++;
+                    }
                 }
                 
+                // Проверяем соседние клетки
                 for (const dir of directions) {
                     const newRow = row + dir.dr;
                     const newCol = col + dir.dc;
                     
-                    // Проверяем, находится ли клетка в пределах поля
                     if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
-                        // Проверяем, существует ли клетка в массиве
-                        if (gameBoard[newRow] && gameBoard[newRow][newCol]) {
-                            // Клетка проверяется, если она закрыта
-                            if (gameBoard[newRow][newCol].type === 'closed') {
-                                count++;
-                            }
+                        const neighborCell = gameBoard[newRow][newCol];
+                        if (neighborCell.type === 'closed' && !neighborCell.markedEmpty) {
+                            count++;
                         }
                     }
                 }
@@ -668,31 +667,35 @@
                 return count;
             }
             
-            // Обновление цвета числа в зависимости от эффективности
+            // Обновление цвета числа
             function updateNumberColor(cellElement, checkCount) {
                 const numberElement = cellElement.querySelector('.cell-number');
                 if (!numberElement) return;
                 
-                // Устанавливаем цвет в зависимости от количества проверяемых клеток
                 if (checkCount >= 5) {
-                    numberElement.style.color = '#4CAF50'; // Зеленый
+                    numberElement.style.color = '#4CAF50';
                 } else if (checkCount >= 4) {
-                    numberElement.style.color = '#8BC34A'; // Светло-зеленый
+                    numberElement.style.color = '#8BC34A';
                 } else if (checkCount >= 3) {
-                    numberElement.style.color = '#FFD700'; // Золотой
+                    numberElement.style.color = '#FFD700';
                 } else if (checkCount >= 2) {
-                    numberElement.style.color = '#FF9800'; // Оранжевый
+                    numberElement.style.color = '#FF9800';
                 } else if (checkCount >= 1) {
-                    numberElement.style.color = '#4FC3F7'; // Синий
+                    numberElement.style.color = '#4FC3F7';
                 } else {
-                    numberElement.style.color = '#888'; // Серый
+                    numberElement.style.color = '#888';
                 }
             }
             
-            // Обработка клика по клетке (смена типа)
+            // Обработка клика по клетке
             function handleCellClick(row, col) {
                 const cell = gameBoard[row][col];
                 const cellElement = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                
+                if (!cellElement) {
+                    console.error('Клетка не найдена:', row, col);
+                    return;
+                }
                 
                 // Если клетка помечена как пустая, снимаем метку
                 if (cell.markedEmpty) {
@@ -704,17 +707,14 @@
                 const oldType = cell.type;
                 const oldTypeIndex = cell.typeIndex;
                 
-                // Увеличиваем индекс типа (по циклу)
                 let newTypeIndex = (oldTypeIndex + 1) % CELL_TYPES.length;
                 let newType = CELL_TYPES[newTypeIndex];
                 
-                // Если переключаем с закрытого на любой другой тип, увеличиваем счетчик кликов
+                // Обновляем счетчик кликов
                 if (oldType === 'closed' && newType !== 'closed') {
                     gameClicks++;
                     clickCounterElement.textContent = gameClicks;
-                }
-                // Если переключаем с любого типа на закрытый, уменьшаем счетчик кликов
-                else if (oldType !== 'closed' && newType === 'closed') {
+                } else if (oldType !== 'closed' && newType === 'closed') {
                     gameClicks = Math.max(0, gameClicks - 1);
                     clickCounterElement.textContent = gameClicks;
                 }
@@ -723,28 +723,23 @@
                 cell.typeIndex = newTypeIndex;
                 cell.type = newType;
                 
-                // Обновляем отображение клетки
+                // Обновляем отображение
                 updateCellDisplay(row, col);
                 
-                // Если установлен тип "обычный без золотой рамки" или "золотой без золотой рамки" - помечаем соседей как вероятно пустые
+                // Помечаем соседей как пустые, если нужно
                 if (newType === 'normalNoBorder' || newType === 'goldNoBorder') {
                     markNeighborsAsEmpty(row, col);
                 }
                 
-                // Если тип меняется с "обычный без рамки" или "золотой без рамки" на другой тип, 
-                // нужно снять метки с соседей, если это были последние такие клетки рядом
+                // Снимаем метки с соседей, если нужно
                 if ((oldType === 'normalNoBorder' || oldType === 'goldNoBorder') && 
                     (newType !== 'normalNoBorder' && newType !== 'goldNoBorder')) {
                     unmarkNeighborsIfNoReason(row, col);
                 }
                 
-                // Обновляем статистику
+                // Обновляем все
                 updateStatistics();
-                
-                // Обновляем числа на всех закрытых клетках
                 updateAllCellNumbers();
-                
-                // Обновляем лучший ход
                 updateBestMove();
             }
             
@@ -753,100 +748,47 @@
                 const cell = gameBoard[row][col];
                 const cellElement = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
                 
-                // Если клетка уже закрыта и не помечена как пустая, ничего не делаем
+                if (!cellElement) return;
+                
+                // Если уже закрыта и не помечена
                 if (cell.type === 'closed' && !cell.markedEmpty) return;
                 
-                // Если клетка была открыта (не закрыта), уменьшаем счетчик кликов
+                // Обновляем счетчик кликов
                 if (cell.type !== 'closed') {
                     gameClicks = Math.max(0, gameClicks - 1);
                     clickCounterElement.textContent = gameClicks;
                 }
                 
-                // Если клетка была помечена как пустая, снимаем метку
+                // Снимаем метку
                 if (cell.markedEmpty) {
                     cell.markedEmpty = false;
                     emptyMarkedCount--;
                 }
                 
-                // Сбрасываем тип клетки
+                // Сбрасываем тип
                 cell.type = 'closed';
                 cell.typeIndex = 0;
                 
-                // Обновляем отображение клетки
+                // Обновляем отображение
                 updateCellDisplay(row, col);
                 
-                // Если сбрасывается клетка, которая раньше была "без рамки", проверяем соседей
+                // Проверяем соседей
                 unmarkNeighborsIfNoReason(row, col);
                 
-                // Обновляем статистику
+                // Обновляем все
                 updateStatistics();
-                
-                // Обновляем числа на всех закрытых клетках
                 updateAllCellNumbers();
-                
-                // Обновляем лучший ход
                 updateBestMove();
-            }
-            
-            // Снять метки с соседей, если нет причин их держать
-            function unmarkNeighborsIfNoReason(row, col) {
-                const directions = [
-                    {dr: -1, dc: 0},  // сверху
-                    {dr: 1, dc: 0},   // снизу
-                    {dr: 0, dc: -1},  // слева
-                    {dr: 0, dc: 1}    // справа
-                ];
-                
-                for (const dir of directions) {
-                    const newRow = row + dir.dr;
-                    const newCol = col + dir.dc;
-                    
-                    // Проверяем, находится ли клетка в пределах поля
-                    if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
-                        const neighborCell = gameBoard[newRow][newCol];
-                        
-                        // Проверяем, помечена ли клетка как пустая
-                        if (neighborCell.markedEmpty) {
-                            // Проверяем, есть ли другие клетки "без рамки" рядом с этой клеткой
-                            let hasReasonToStayMarked = false;
-                            
-                            // Проверяем всех соседей этой клетки
-                            const neighborDirections = [
-                                {dr: -1, dc: 0}, {dr: 1, dc: 0}, {dr: 0, dc: -1}, {dr: 0, dc: 1}
-                            ];
-                            
-                            for (const ndir of neighborDirections) {
-                                const checkRow = newRow + ndir.dr;
-                                const checkCol = newCol + ndir.dc;
-                                
-                                if (checkRow >= 0 && checkRow < ROWS && checkCol >= 0 && checkCol < COLS) {
-                                    const checkCell = gameBoard[checkRow][checkCol];
-                                    // Если рядом есть клетка "без рамки", то метку оставляем
-                                    if (checkCell.type === 'normalNoBorder' || checkCell.type === 'goldNoBorder') {
-                                        hasReasonToStayMarked = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            
-                            // Если нет причин оставаться помеченной, снимаем метку
-                            if (!hasReasonToStayMarked) {
-                                neighborCell.markedEmpty = false;
-                                emptyMarkedCount--;
-                                updateCellDisplay(newRow, newCol);
-                            }
-                        }
-                    }
-                }
             }
             
             // Обновление отображения клетки
             function updateCellDisplay(row, col) {
                 const cell = gameBoard[row][col];
                 const cellElement = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                
                 if (!cellElement) return;
                 
-                // Очищаем все классы и содержимое
+                // Очищаем классы
                 cellElement.className = 'cell';
                 cellElement.innerHTML = '';
                 
@@ -854,12 +796,11 @@
                     // Закрытая клетка
                     cellElement.classList.add('closed');
                     
-                    // Если помечена как пустая
                     if (cell.markedEmpty) {
                         cellElement.classList.add('marked-empty');
                     }
                     
-                    // Добавляем только цифру
+                    // Добавляем цифру
                     const checkCount = calculateCheckCount(row, col, true);
                     const numberElement = document.createElement('div');
                     numberElement.className = 'cell-number';
@@ -871,43 +812,80 @@
                     // Открытая клетка
                     cellElement.classList.add('opened');
                     
-                    // Устанавливаем рамку в зависимости от типа
+                    // Устанавливаем рамку
                     if (cell.type === 'goldWithBorder' || cell.type === 'normalWithBorder') {
                         cellElement.classList.add('border-gold');
                     } else {
                         cellElement.classList.add('border-normal');
                     }
                     
-                    // Добавляем звезду для золотых клеток
+                    // Добавляем звезду для золотых
                     if (cell.type === 'goldWithBorder' || cell.type === 'goldNoBorder') {
                         cellElement.classList.add('gold');
                     }
-                    
-                    // Для открытых клеток не добавляем текст
                 }
             }
             
-            // Пометить соседние клетки как вероятно пустые
+            // Пометить соседние клетки как пустые
             function markNeighborsAsEmpty(row, col) {
                 const directions = [
-                    {dr: -1, dc: 0},  // сверху
-                    {dr: 1, dc: 0},   // снизу
-                    {dr: 0, dc: -1},  // слева
-                    {dr: 0, dc: 1}    // справа
+                    {dr: -1, dc: 0}, {dr: 1, dc: 0}, {dr: 0, dc: -1}, {dr: 0, dc: 1}
                 ];
                 
                 for (const dir of directions) {
                     const newRow = row + dir.dr;
                     const newCol = col + dir.dc;
                     
-                    // Проверяем, находится ли клетка в пределах поля
                     if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
                         const cell = gameBoard[newRow][newCol];
-                        // Помечаем как пустую только если она закрыта и еще не помечена
                         if (cell.type === 'closed' && !cell.markedEmpty) {
                             cell.markedEmpty = true;
                             emptyMarkedCount++;
                             updateCellDisplay(newRow, newCol);
+                        }
+                    }
+                }
+            }
+            
+            // Снять метки с соседей, если нет причин
+            function unmarkNeighborsIfNoReason(row, col) {
+                const directions = [
+                    {dr: -1, dc: 0}, {dr: 1, dc: 0}, {dr: 0, dc: -1}, {dr: 0, dc: 1}
+                ];
+                
+                for (const dir of directions) {
+                    const newRow = row + dir.dr;
+                    const newCol = col + dir.dc;
+                    
+                    if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
+                        const neighborCell = gameBoard[newRow][newCol];
+                        
+                        if (neighborCell.markedEmpty) {
+                            // Проверяем, есть ли причины оставаться помеченной
+                            let hasReason = false;
+                            const neighborDirs = [
+                                {dr: -1, dc: 0}, {dr: 1, dc: 0}, {dr: 0, dc: -1}, {dr: 0, dc: 1}
+                            ];
+                            
+                            for (const ndir of neighborDirs) {
+                                const checkRow = newRow + ndir.dr;
+                                const checkCol = newCol + ndir.dc;
+                                
+                                if (checkRow >= 0 && checkRow < ROWS && checkCol >= 0 && checkCol < COLS) {
+                                    const checkCell = gameBoard[checkRow][checkCol];
+                                    if (checkCell.type === 'normalNoBorder' || checkCell.type === 'goldNoBorder') {
+                                        hasReason = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            // Если нет причин, снимаем метку
+                            if (!hasReason) {
+                                neighborCell.markedEmpty = false;
+                                emptyMarkedCount--;
+                                updateCellDisplay(newRow, newCol);
+                            }
                         }
                     }
                 }
@@ -942,7 +920,7 @@
                 goldFoundElement.textContent = `${goldFound}/${GOLD_COUNT}`;
                 emptyCountElement.textContent = emptyMarkedCount;
                 
-                // Проверяем завершение игры
+                // Проверяем завершение
                 if (goldFound >= GOLD_COUNT) {
                     hintTextElement.textContent = 'Поздравляем! Вы нашли все золотые квадраты!';
                     bestMoveElement.textContent = 'Игра завершена!';
@@ -958,8 +936,8 @@
                     for (let col = 0; col < COLS; col++) {
                         const cell = gameBoard[row][col];
                         
-                        // Рассматриваем только закрытые клетки (даже помеченные как пустые)
-                        if (cell.type === 'closed') {
+                        // Рассматриваем только закрытые, не помеченные клетки
+                        if (cell.type === 'closed' && !cell.markedEmpty) {
                             const checkCount = calculateCheckCount(row, col, true);
                             if (checkCount > bestCount) {
                                 bestCount = checkCount;
@@ -972,22 +950,18 @@
                 if (bestPosition) {
                     bestMoveElement.textContent = `(${bestPosition.row+1}, ${bestPosition.col+1}) - ${bestCount} кл.`;
                     
-                    // Обновляем подсказку
-                    const cell = gameBoard[bestPosition.row][bestPosition.col];
-                    const markedText = cell.markedEmpty ? " (вероятно пустой)" : "";
-                    
                     if (bestCount === 0) {
-                        hintTextElement.textContent = 'Все клетки проверены. Откройте оставшиеся квадраты.';
+                        hintTextElement.textContent = 'Все потенциально золотые клетки проверены.';
                     } else if (bestCount >= 5) {
-                        hintTextElement.textContent = `Квадрат (${bestPosition.row+1}, ${bestPosition.col+1})${markedText} проверяет ${bestCount} квадратов - отличный выбор!`;
+                        hintTextElement.textContent = `Квадрат (${bestPosition.row+1}, ${bestPosition.col+1}) проверяет ${bestCount} потенциально золотых квадратов - отличный выбор!`;
                     } else if (bestCount >= 3) {
-                        hintTextElement.textContent = `Квадрат (${bestPosition.row+1}, ${bestPosition.col+1})${markedText} проверяет ${bestCount} квадратов.`;
+                        hintTextElement.textContent = `Квадрат (${bestPosition.row+1}, ${bestPosition.col+1}) проверяет ${bestCount} потенциально золотых квадратов.`;
                     } else {
-                        hintTextElement.textContent = `Квадрат (${bestPosition.row+1}, ${bestPosition.col+1})${markedText} проверяет ${bestCount} квадратов. Попробуйте найти лучший вариант.`;
+                        hintTextElement.textContent = `Квадрат (${bestPosition.row+1}, ${bestPosition.col+1}) проверяет ${bestCount} потенциально золотых квадратов.`;
                     }
                 } else {
                     bestMoveElement.textContent = '-';
-                    hintTextElement.textContent = 'Все клетки проверены. Откройте оставшиеся квадраты.';
+                    hintTextElement.textContent = 'Все потенциально золотые клетки проверены.';
                 }
             }
             
@@ -1013,7 +987,7 @@
             // Настройка обработчиков событий
             resetButton.addEventListener('click', initHelper);
             
-            // Инициализация помощника
+            // Инициализация
             initHelper();
         });
     </script>
